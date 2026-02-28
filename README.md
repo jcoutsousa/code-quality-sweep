@@ -111,6 +111,42 @@ In any Copilot Chat window (VS Code, GitHub.com, or CLI):
 
 ---
 
+### Using with Claude Code
+
+Copy the `.claude/` directory into your project:
+
+```bash
+# From the cloned code-quality-sweep repo
+cp -r .claude your-project/.claude
+```
+
+Then in Claude Code:
+
+```bash
+# Full sweep
+/sweep
+
+# Architecture assessment only
+/sweep-architecture
+
+# Security scan only
+/sweep-security
+
+# Or invoke the agent directly
+# "Use the code-quality-sweep agent to check error handling in src/"
+```
+
+The agent is also available as a user-level subagent. Copy it to `~/.claude/agents/` to make it available across all your projects:
+
+```bash
+cp .claude/agents/code-quality-sweep.md ~/.claude/agents/
+```
+
+### Using with Other AI Editors (Cursor, Windsurf, etc.)
+
+The repo includes an `AGENTS.md` file following the cross-tool standard. Editors that support `AGENTS.md` (Cursor, Windsurf, GitHub Copilot, Gemini CLI, and others) will automatically pick up the agent context.
+
+
 ## Configuration
 
 Create `.github/code-quality-sweep.yml` in your repo to customize behavior:
