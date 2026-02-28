@@ -1,0 +1,56 @@
+# trivy.yaml — Project-level Trivy configuration
+# Place at repo root. Trivy auto-discovers this file.
+# Docs: https://aquasecurity.github.io/trivy/latest/docs/references/configuration/config-file/
+
+# ─── Vulnerability scanning ──────────────────────────
+vulnerability:
+  type:
+    - os
+    - library
+
+# ─── Secret scanning ────────────────────────────────
+secret:
+  config: trivy-secret.yaml  # Optional custom secret rules
+
+# ─── Misconfiguration scanning ──────────────────────
+misconfiguration:
+  # Checkers: dockerfile, kubernetes, terraform, cloudformation, helm, ansible
+  include-non-failures: false
+
+# ─── Severity threshold ─────────────────────────────
+severity:
+  - CRITICAL
+  - HIGH
+
+# ─── Paths to skip ──────────────────────────────────
+skip-dirs:
+  - node_modules
+  - vendor
+  - .git
+  - dist
+  - build
+  - __pycache__
+  - .terraform
+  - .next
+
+skip-files:
+  - "**/*_test.go"
+  - "**/test_*.py"
+  - "**/*.test.ts"
+  - "**/*.spec.ts"
+
+# ─── Ignore unfixed vulnerabilities ─────────────────
+ignore-unfixed: false
+
+# ─── License scanning ───────────────────────────────
+license:
+  # Flag these license types
+  forbidden:
+    - AGPL-1.0
+    - AGPL-3.0
+  # Restricted licenses need manual review
+  restricted:
+    - GPL-2.0
+    - GPL-3.0
+    - LGPL-2.1
+    - LGPL-3.0

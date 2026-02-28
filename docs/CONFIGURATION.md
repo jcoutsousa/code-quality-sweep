@@ -24,6 +24,7 @@ categories:
   - test-quality
   - architecture
   - monorepo-hygiene
+  - container-infra-security
 
 # ─── Path Exclusions ─────────────────────────────────────────────
 exclude:
@@ -78,6 +79,36 @@ rules:
     max_widget_depth: 5
     max_file_length: 400
     state_management: null  # auto-detected: bloc, riverpod, provider, getx
+
+# ─── Container & Infrastructure Security ─────────────
+container_security:
+  enabled: auto  # auto | true | false (auto = only when Dockerfiles/IaC present)
+  trivy_severity: "HIGH,CRITICAL"  # Severity threshold for Trivy scans
+  scan_modes:
+    - fs           # CVEs in dependencies
+    - secret       # Hardcoded secrets
+    - config       # IaC misconfigurations
+    - image        # Container image vulnerabilities
+    - sbom         # Software Bill of Materials
+  generate_sbom: true
+  sbom_formats:
+    - cyclonedx
+    - spdx-json
+  license_policy:
+    forbidden:
+      - AGPL-1.0
+      - AGPL-3.0
+    restricted:
+      - GPL-2.0
+      - GPL-3.0
+      - LGPL-2.1
+      - LGPL-3.0
+  dockerfile:
+    require_non_root: true
+    require_healthcheck: true
+    require_pinned_base: true  # Pin to SHA digest, not just tag
+    max_image_size_mb: 500
+  ignore_cves: []  # CVEs to suppress (e.g., ["CVE-2024-99999"])
 
 # ─── Monorepo Hygiene Rules ──────────────────────────
 monorepo_hygiene:

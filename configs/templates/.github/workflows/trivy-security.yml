@@ -1,0 +1,196 @@
+# Trivy Security Scanning — Container & Infrastructure
+# Scans filesystem (CVEs + secrets), IaC misconfigs, and container images
+#
+# Prerequisites:
+#   - For image scanning: services must have Dockerfiles
+#   - For SBOM upload: enable GitHub dependency graph
+#
+# Usage:
+#   Copy this file to .github/workflows/trivy-security.yml
+#   Customize the service matrix and severity thresholds
+
+name: Security Scan (Trivy)
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main]
+  schedule:
+    # Run weekly to catch newly disclosed CVEs
+    - cron: '0 6 * * 1'
+
+permissions:
+  contents: read
+  security-events: write    # For GitHub Security tab integration
+  actions: read
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TRIVY_VERSION: "0.58.0"
+  SEVERITY_THRESHOLD: "CRITICAL,HIGH"
+
+jobs:
+  # ─── Filesystem Scan: CVEs in dependencies + secrets ─
+  fs-scan:
+    name: "Filesystem — CVEs & Secrets"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy filesystem scan (vulnerabilities)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: sarif
+          output: trivy-fs-vuln.sarif
+          severity: ${{ env.SEVERITY_THRESHOLD }}
+          scanners: vuln
+          exit-code: 1
+
+      - name: Run Trivy filesystem scan (secrets)
+        uses: aquasecurity/trivy-action@0.28.0
+        if: always()
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: sarif
+          output: trivy-fs-secret.sarif
+          scanners: secret
+          exit-code: 1
+
+      - name: Upload vulnerability results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-fs-vuln.sarif
+          category: trivy-filesystem-vuln
+
+      - name: Upload secret results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-fs-secret.sarif
+          category: trivy-filesystem-secret
+
+  # ─── IaC Misconfiguration Scan ─────────────────────
+  config-scan:
+    name: "IaC — Misconfigurations"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy config scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: config
+          scan-ref: .
+          format: sarif
+          output: trivy-config.sarif
+          severity: ${{ env.SEVERITY_THRESHOLD }}
+          exit-code: 1
+          trivy-config: |
+            misconfiguration:
+              # Scan Dockerfile, Terraform, K8s, Helm, CloudFormation
+              include-non-failures: false
+
+      - name: Upload config results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-config.sarif
+          category: trivy-misconfig
+
+  # ─── Container Image Scan ──────────────────────────
+  # Customize the matrix with your actual services
+  image-scan:
+    name: "Image — ${{ matrix.service }}"
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service:
+          - name: api-gateway
+            dockerfile: services/api-gateway/Dockerfile
+            context: .
+          - name: user-service
+            dockerfile: services/user-service/Dockerfile
+            context: .
+          # Add more services here:
+          # - name: order-service
+          #   dockerfile: services/order-service/Dockerfile
+          #   context: .
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.service.context }}
+          file: ${{ matrix.service.dockerfile }}
+          push: false
+          load: true
+          tags: ${{ matrix.service.name }}:scan
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Scan image with Trivy
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: "${{ matrix.service.name }}:scan"
+          format: sarif
+          output: "trivy-image-${{ matrix.service.name }}.sarif"
+          severity: ${{ env.SEVERITY_THRESHOLD }}
+          exit-code: 1
+
+      - name: Upload image results to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: "trivy-image-${{ matrix.service.name }}.sarif"
+          category: "trivy-image-${{ matrix.service.name }}"
+
+  # ─── SBOM Generation ───────────────────────────────
+  sbom:
+    name: "SBOM — Software Bill of Materials"
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate SBOM (CycloneDX)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: cyclonedx
+          output: sbom.cdx.json
+
+      - name: Upload SBOM as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-cyclonedx
+          path: sbom.cdx.json
+          retention-days: 90
+
+      - name: Generate SBOM (SPDX)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: spdx-json
+          output: sbom.spdx.json
+
+      - name: Upload SPDX SBOM
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-spdx
+          path: sbom.spdx.json
+          retention-days: 90

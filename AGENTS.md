@@ -26,6 +26,7 @@ The agent organizes findings into 6 categories (each addressed separately):
 5. **Test Quality & Coverage** — untested APIs, flaky tests, missing integration tests
 6. **Architecture & Scalability** — god classes, missing API versioning, N+1 queries, microservices readiness
 7. **Monorepo Hygiene** — workspace config, build orchestration, change detection, CODEOWNERS, versioning strategy
+8. **Container & Infrastructure Security** — Trivy CVE scanning, Dockerfile hardening, IaC misconfigs, SBOM, license compliance
 
 ## Safety Rules
 
@@ -48,6 +49,7 @@ The agent organizes findings into 6 categories (each addressed separately):
   sweep-architecture.md
   sweep-security.md
   sweep-monorepo.md
+  sweep-container-security.md
 docs/                      # Documentation and templates
   CONFIGURATION.md
   ARCHITECTURE_ASSESSMENT_TEMPLATE.md

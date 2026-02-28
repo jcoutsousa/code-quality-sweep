@@ -36,7 +36,7 @@ If the repo contains multiple stacks (e.g., a Python backend + React frontend + 
 
 ## 3. Sweep Categories
 
-Every issue you find belongs to exactly one of these categories. Each category produces its own PR. Category 7 only applies to monorepo structures.
+Every issue you find belongs to exactly one of these categories. Each category produces its own PR. Category 7 only applies to monorepos. Category 8 only applies when containers or IaC files are present.
 
 ### Category 1: Dead Code & Unused Dependencies
 **What to look for:**
@@ -231,6 +231,110 @@ Every issue you find belongs to exactly one of these categories. Each category p
 
 **Reference templates:** When fixing issues, suggest configurations from `configs/templates/` (turbo.json, nx.json, CODEOWNERS, pnpm-workspace.yaml, changeset config, CI workflow).
 
+### Category 8: Container & Infrastructure Security
+**Powered by [Trivy](https://aquasecurity.github.io/trivy/).** Produces its own PR. Applies when any of: Dockerfiles, Terraform, Kubernetes manifests, Helm charts, or CloudFormation templates are present.
+
+**Filesystem Vulnerability Scan (`trivy fs`):**
+- CVEs in OS packages and application libraries (all stacks)
+- Known vulnerabilities in `requirements.txt`, `package-lock.json`, `go.sum`, `pom.xml`, `pubspec.lock`
+- Severity classification: CRITICAL → HIGH → MEDIUM → LOW
+- Auto-fix: update dependency versions where a patched version exists and tests still pass
+- Flag: vulnerabilities with no fix available (upstream "will not fix")
+
+**Secret Detection (`trivy fs --scanners secret`):**
+- Hardcoded AWS keys, GCP service accounts, Azure credentials
+- API keys (Stripe, Twilio, SendGrid, etc.)
+- Database connection strings with embedded passwords
+- JWT signing secrets, OAuth client secrets
+- Private keys (RSA, ECDSA, Ed25519)
+- .env files committed to the repo
+- Auto-fix: replace with environment variable references, add to .gitignore
+- Flag: **secrets need rotation** — code fix alone is insufficient, old secrets are compromised
+
+**IaC Misconfiguration Scan (`trivy config`):**
+
+*Dockerfile:*
+- Running as root (missing USER instruction)
+- Using `latest` or unpinned base image tags
+- Missing HEALTHCHECK instruction
+- `COPY . .` without `.dockerignore` (copies secrets, tests, .git into image)
+- Not using multi-stage builds (bloated images)
+- Using `ADD` instead of `COPY` for local files
+- Missing `--no-cache-dir` on pip install / `--production` on npm install
+- `apt-get update` without `apt-get clean` in same layer
+
+*Terraform:*
+- Resources publicly accessible (RDS, S3, Elasticsearch)
+- Missing encryption at rest (RDS, S3, EBS, SQS, SNS)
+- Missing encryption in transit (no TLS/SSL enforcement)
+- Overly permissive security groups (0.0.0.0/0 ingress)
+- Overly permissive IAM policies (`*` actions or resources)
+- Missing logging/monitoring (CloudTrail, VPC flow logs)
+- Missing backup configuration
+- Hardcoded credentials in .tf files
+
+*Kubernetes:*
+- Containers running as root or with privileged: true
+- Missing resource limits (CPU, memory)
+- Missing liveness/readiness probes
+- Using `latest` image tags
+- Missing network policies
+- Secrets mounted as environment variables (should use volumes or external secret managers)
+- Missing pod disruption budgets
+- No security context (runAsNonRoot, readOnlyRootFilesystem, allowPrivilegeEscalation: false)
+
+*Helm:*
+- Same as Kubernetes checks, applied to rendered templates
+- Missing values.yaml defaults for security-sensitive settings
+
+*CloudFormation:*
+- Same patterns as Terraform (public access, missing encryption, permissive IAM)
+
+**Container Image Scan (`trivy image`):**
+- OS-level vulnerabilities in base images (Debian, Alpine, Ubuntu packages)
+- Application library vulnerabilities baked into the image
+- Image size analysis (flag images >500MB — likely not using slim/distroless base)
+- Auto-fix: recommend `slim`, `alpine`, or `distroless` base images
+- Flag: OS vulns that are "will not fix" upstream
+
+**Software Bill of Materials (`trivy sbom`):**
+- Generate CycloneDX format SBOM (`sbom.cdx.json`)
+- Generate SPDX format SBOM (`sbom.spdx.json`)
+- Commit to `docs/` or upload as CI artifact
+- Useful for: supply chain compliance, audits, license tracking
+
+**License Compliance:**
+- Scan all dependencies for license types
+- Flag forbidden licenses: AGPL-1.0, AGPL-3.0
+- Flag restricted licenses needing legal review: GPL-2.0, GPL-3.0, LGPL-2.1, LGPL-3.0
+- Report all licenses found with package counts
+
+**Analysis commands:**
+```bash
+# Filesystem: CVEs
+trivy fs . --severity HIGH,CRITICAL --format json
+
+# Filesystem: secrets
+trivy fs . --scanners secret --format json
+
+# IaC misconfigurations
+trivy config . --severity HIGH,CRITICAL --format json
+
+# Container image (after building)
+trivy image <image>:<tag> --severity HIGH,CRITICAL --format json
+
+# SBOM generation
+trivy fs . --format cyclonedx --output docs/sbom.cdx.json
+trivy fs . --format spdx-json --output docs/sbom.spdx.json
+
+# License compliance
+trivy fs . --scanners license --severity HIGH,CRITICAL
+```
+
+If Trivy is not installed, note it as an infrastructure gap and provide installation instructions. Fall back to manual review of Dockerfiles and IaC files using Read/Grep.
+
+**Reference templates:** Suggest `configs/templates/trivy.yaml` for project-level Trivy config and `configs/templates/.github/workflows/trivy-security.yml` for CI integration.
+
 ## 4. Sweep Workflow
 
 Follow these phases in order. Never skip a phase.
@@ -283,10 +387,17 @@ dart analyze --format machine
 flutter test
 ```
 
+**Trivy (all stacks — when installed):**
+```bash
+trivy fs . --severity HIGH,CRITICAL --format json 2>/dev/null || echo "trivy not installed"
+trivy config . --severity HIGH,CRITICAL --format json 2>/dev/null || echo "trivy not installed"
+trivy fs . --scanners secret --format json 2>/dev/null || echo "trivy not installed"
+```
+
 If the tooling is not configured in the repo, note this as an **infrastructure gap** under Category 6.
 
 ### Phase 3: Categorization
-1. Map every finding to exactly one of the 7 categories
+1. Map every finding to exactly one of the 8 categories
 2. Within each category, sort by severity: CRITICAL → HIGH → MEDIUM → LOW
 3. Discard findings that are:
    - Already suppressed by inline comments (`// nolint`, `# noqa`, `@SuppressWarnings`)
@@ -442,7 +553,9 @@ If the repo has CI/CD configuration, verify these quality gates exist:
 ### Recommended additional gates
 - [ ] Integration tests
 - [ ] Contract tests (for multi-service repos)
-- [ ] Container image scanning
+- [ ] Container image scanning (Trivy recommended)
+- [ ] SBOM generation (CycloneDX/SPDX)
+- [ ] License compliance scanning
 - [ ] Infrastructure validation (Terraform plan, Helm lint)
 - [ ] Performance regression tests
 - [ ] Mutation testing

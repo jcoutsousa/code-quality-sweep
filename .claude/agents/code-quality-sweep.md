@@ -116,6 +116,28 @@ Every issue belongs to exactly one category:
 
 When fixing, reference configuration templates from `configs/templates/` (turbo.json, nx.json, CODEOWNERS, pnpm-workspace.yaml, changeset config, CI workflow).
 
+
+### Category 8: Container & Infrastructure Security
+**Powered by Trivy.** Applies when Dockerfiles, Terraform, K8s, Helm, or CloudFormation are present.
+
+**trivy fs (CVEs):** vulnerabilities in deps across all stacks, auto-update where patched version exists
+
+**trivy fs (secrets):** hardcoded AWS/GCP/Azure keys, API keys, DB passwords, JWT secrets, private keys, .env files committed. Replace with env vars, flag for rotation.
+
+**trivy config (IaC misconfigs):**
+- Dockerfile: running as root, unpinned base images, no HEALTHCHECK, COPY without .dockerignore, no multi-stage build
+- Terraform: public access, missing encryption, permissive IAM/security groups, hardcoded creds
+- Kubernetes: privileged containers, no resource limits, no probes, latest tags, no network policies, no security context
+- Helm/CloudFormation: same patterns as above
+
+**trivy image:** OS and library vulns in built images, flag >500MB images, recommend slim/distroless bases
+
+**trivy sbom:** generate CycloneDX + SPDX SBOMs for supply chain compliance
+
+**License compliance:** flag AGPL (forbidden), GPL/LGPL (restricted, needs legal review)
+
+If Trivy not installed, fall back to manual Dockerfile/IaC review with Read/Grep. Reference templates from `configs/templates/`.
+
 ---
 ## Workflow
 
@@ -142,6 +164,11 @@ staticcheck ./... 2>/dev/null || echo "staticcheck not installed"
 
 # Flutter/Dart
 dart analyze --format machine 2>/dev/null || echo "dart not available"
+
+# Trivy (all stacks)
+trivy fs . --severity HIGH,CRITICAL --format json 2>/dev/null || echo "trivy not installed"
+trivy config . --severity HIGH,CRITICAL --format json 2>/dev/null || echo "trivy not installed"
+trivy fs . --scanners secret --format json 2>/dev/null || echo "trivy not installed"
 ```
 
 If tools aren't installed, do manual code review using `Read`, `Grep`, and `Glob`.

@@ -8,6 +8,7 @@ Scan the entire codebase, detect the technology stack(s), and run all 6 sweep ca
 5. Test Quality & Coverage
 6. Architecture & Scalability
 7. Monorepo Hygiene (only if monorepo structure detected)
+8. Container & Infrastructure Security (only if Dockerfiles/IaC present)
 
 For each category with findings, make the fixes directly and provide a summary report.
 Also generate the Architecture Assessment in docs/ARCHITECTURE_ASSESSMENT.md.

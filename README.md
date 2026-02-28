@@ -16,7 +16,7 @@ Vibe coding gets you from zero to working prototype incredibly fast. But working
 
 ## What It Covers
 
-The agent organizes every finding into one of seven categories, each producing its own PR:
+The agent organizes every finding into one of eight categories, each producing its own PR:
 
 | # | Category | What it catches |
 |---|---|---|
@@ -27,6 +27,7 @@ The agent organizes every finding into one of seven categories, each producing i
 | 5 | **Test Quality & Coverage** | Untested public APIs, flaky patterns, missing integration/contract tests |
 | 6 | **Architecture & Scalability** | God classes, missing API versioning, N+1 queries, microservices readiness |
 | 7 | **Monorepo Hygiene** | Workspace config, build orchestration, change detection, CODEOWNERS, versioning |
+| 8 | **Container & Infrastructure Security** | CVEs (Trivy), Dockerfile hardening, Terraform/K8s misconfigs, SBOM, license compliance |
 
 Category 6 also generates an **Architecture Assessment Report** (`docs/ARCHITECTURE_ASSESSMENT.md`) with a scalability scorecard and evolution roadmap.
 
@@ -135,6 +136,9 @@ Then in Claude Code:
 
 # Monorepo hygiene audit
 /sweep-monorepo
+
+# Container & infrastructure security
+/sweep-container-security
 
 # Or invoke the agent directly
 # "Use the code-quality-sweep agent to check error handling in src/"
@@ -282,6 +286,8 @@ The `configs/templates/` directory contains ready-to-use configuration files for
 | `pnpm-workspace.yaml` | pnpm workspace package paths |
 | `.changeset/config.json` | Changesets versioning config |
 | `.github/workflows/ci-monorepo.yml` | CI with change detection and parallelism |
+| `trivy.yaml` | Trivy scanner configuration (severity, skip paths, license policy) |
+| `.github/workflows/trivy-security.yml` | Trivy CI: fs scan + config scan + image scan + SBOM |
 
 Copy the relevant templates into your project and customize team names, service paths, and workflow triggers.
 
@@ -296,6 +302,7 @@ The [`examples/`](examples/) directory contains sample output for different proj
 - [`examples/flutter-app/`](examples/flutter-app/) — Flutter mobile app sweep
 - [`examples/monorepo-multi-service/`](examples/monorepo-multi-service/) — Multi-service monorepo sweep
 - [`examples/monorepo-hygiene/`](examples/monorepo-hygiene/) — Monorepo structure & tooling audit
+- [`examples/container-infra-security/`](examples/container-infra-security/) — Container & IaC security scan
 
 ---
 
