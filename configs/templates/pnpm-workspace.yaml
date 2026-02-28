@@ -1,0 +1,15 @@
+# pnpm workspace configuration
+# Docs: https://pnpm.io/workspaces
+
+packages:
+  # Services / Applications
+  - "apps/*"
+  - "services/*"
+
+  # Shared packages / libraries
+  - "packages/*"
+  - "libs/*"
+
+  # Exclude test fixtures and examples
+  - "!**/test-fixtures/**"
+  - "!**/examples/**"

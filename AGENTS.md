@@ -25,6 +25,7 @@ The agent organizes findings into 6 categories (each addressed separately):
 4. **Security & Secrets** — hardcoded keys, injection vectors, CVEs
 5. **Test Quality & Coverage** — untested APIs, flaky tests, missing integration tests
 6. **Architecture & Scalability** — god classes, missing API versioning, N+1 queries, microservices readiness
+7. **Monorepo Hygiene** — workspace config, build orchestration, change detection, CODEOWNERS, versioning strategy
 
 ## Safety Rules
 
@@ -46,6 +47,7 @@ The agent organizes findings into 6 categories (each addressed separately):
   sweep.md
   sweep-architecture.md
   sweep-security.md
+  sweep-monorepo.md
 docs/                      # Documentation and templates
   CONFIGURATION.md
   ARCHITECTURE_ASSESSMENT_TEMPLATE.md

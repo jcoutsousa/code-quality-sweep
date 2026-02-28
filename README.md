@@ -16,7 +16,7 @@ Vibe coding gets you from zero to working prototype incredibly fast. But working
 
 ## What It Covers
 
-The agent organizes every finding into one of six categories, each producing its own PR:
+The agent organizes every finding into one of seven categories, each producing its own PR:
 
 | # | Category | What it catches |
 |---|---|---|
@@ -26,6 +26,7 @@ The agent organizes every finding into one of six categories, each producing its
 | 4 | **Security & Secrets** | Hardcoded keys, SQL injection vectors, missing input validation, CVEs |
 | 5 | **Test Quality & Coverage** | Untested public APIs, flaky patterns, missing integration/contract tests |
 | 6 | **Architecture & Scalability** | God classes, missing API versioning, N+1 queries, microservices readiness |
+| 7 | **Monorepo Hygiene** | Workspace config, build orchestration, change detection, CODEOWNERS, versioning |
 
 Category 6 also generates an **Architecture Assessment Report** (`docs/ARCHITECTURE_ASSESSMENT.md`) with a scalability scorecard and evolution roadmap.
 
@@ -131,6 +132,9 @@ Then in Claude Code:
 
 # Security scan only
 /sweep-security
+
+# Monorepo hygiene audit
+/sweep-monorepo
 
 # Or invoke the agent directly
 # "Use the code-quality-sweep agent to check error handling in src/"
@@ -266,6 +270,22 @@ Use the `categories` list in your config, or specify the category in your Copilo
 
 ---
 
+## Configuration Templates
+
+The `configs/templates/` directory contains ready-to-use configuration files for monorepo tooling:
+
+| Template | Purpose |
+|---|---|
+| `turbo.json` | Turborepo task pipeline with caching |
+| `nx.json` | Nx workspace config with named inputs |
+| `CODEOWNERS` | Team-based code ownership routing |
+| `pnpm-workspace.yaml` | pnpm workspace package paths |
+| `.changeset/config.json` | Changesets versioning config |
+| `.github/workflows/ci-monorepo.yml` | CI with change detection and parallelism |
+
+Copy the relevant templates into your project and customize team names, service paths, and workflow triggers.
+
+
 ## Examples
 
 The [`examples/`](examples/) directory contains sample output for different project types:
@@ -275,6 +295,7 @@ The [`examples/`](examples/) directory contains sample output for different proj
 - [`examples/go-microservice/`](examples/go-microservice/) — Go microservice sweep
 - [`examples/flutter-app/`](examples/flutter-app/) — Flutter mobile app sweep
 - [`examples/monorepo-multi-service/`](examples/monorepo-multi-service/) — Multi-service monorepo sweep
+- [`examples/monorepo-hygiene/`](examples/monorepo-hygiene/) — Monorepo structure & tooling audit
 
 ---
 

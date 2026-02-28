@@ -36,7 +36,7 @@ If the repo contains multiple stacks (e.g., a Python backend + React frontend + 
 
 ## 3. Sweep Categories
 
-Every issue you find belongs to exactly one of these categories. Each category produces its own PR.
+Every issue you find belongs to exactly one of these categories. Each category produces its own PR. Category 7 only applies to monorepo structures.
 
 ### Category 1: Dead Code & Unused Dependencies
 **What to look for:**
@@ -162,6 +162,75 @@ Every issue you find belongs to exactly one of these categories. Each category p
 
 ---
 
+### Category 7: Monorepo Hygiene
+**Only applies when a monorepo structure is detected.** Produces its own PR.
+
+**Detection signals:** Multiple manifest files at different directory levels, `services/`/`apps/`/`packages/` directories, workspace configuration files, multiple Dockerfiles, docker-compose with multiple services.
+
+**What to look for:**
+
+**Workspace Management:**
+- No workspace configuration (pnpm-workspace.yaml, npm workspaces in package.json, yarn workspaces)
+- Dependencies installed independently per service (massive duplication)
+- Missing root-level lockfile
+- Mixed package managers across services
+- No `.npmrc` or `.yarnrc.yml` for consistent settings
+
+**Dependency Strategy:**
+- Same dependency at different versions across services without justification
+- No dependency hoisting strategy
+- Phantom dependencies (imports that work only because of hoisting accidents)
+- Missing `catalog:` or shared version constraints
+- No `syncpack` or similar version alignment tool
+- Shared packages without explicit public API (barrel exports)
+
+**Build Orchestration:**
+- No task runner (Turborepo, Nx, Bazel, Lerna)
+- Missing task pipeline definitions (build depends on ^build)
+- No input/output declarations for caching
+- No remote build cache configuration
+- Build tasks that don't declare dependencies correctly (build order issues)
+- Missing `clean` tasks
+
+**Change Detection:**
+- CI runs all checks on every PR regardless of what changed
+- No `paths-filter` or equivalent in GitHub Actions
+- No `--filter` or `--affected` flags in build commands
+- Missing `affected.defaultBase` configuration (Nx)
+- No `.turbo/` or `.nx/` cache directory in `.gitignore`
+
+**Code Ownership:**
+- Missing `CODEOWNERS` file
+- CODEOWNERS entries too broad (single team owns everything)
+- CODEOWNERS entries that don't match actual directory structure
+- No team-based ownership (only individual owners)
+- Missing ownership for security-sensitive paths (auth, middleware, infra)
+
+**Versioning Strategy:**
+- Manual version bumps in package.json
+- No changelog generation (Changesets, conventional-changelog, Release Please)
+- No coordinated release process for interdependent packages
+- Missing `publishConfig` for packages intended for registry
+- No `private: true` on packages that shouldn't be published
+- No git tags for releases
+
+**Boundary Enforcement:**
+- Shared packages that export everything (no barrel file / public API)
+- Services importing directly from other services' internals
+- No ESLint import restrictions (`@nx/enforce-module-boundaries` or `eslint-plugin-import`)
+- Circular dependencies between packages
+- Missing TypeScript project references or path aliases
+
+**CI/CD Efficiency:**
+- Full rebuild on every push (>10 min CI with no caching)
+- No build artifact caching (Turborepo remote cache, Nx Cloud, GitHub Actions cache)
+- No parallelism in CI matrix for independent services
+- Docker builds without layer caching
+- No `concurrency` group to cancel redundant runs
+- Missing `fail-fast: false` for independent service builds
+
+**Reference templates:** When fixing issues, suggest configurations from `configs/templates/` (turbo.json, nx.json, CODEOWNERS, pnpm-workspace.yaml, changeset config, CI workflow).
+
 ## 4. Sweep Workflow
 
 Follow these phases in order. Never skip a phase.
@@ -217,7 +286,7 @@ flutter test
 If the tooling is not configured in the repo, note this as an **infrastructure gap** under Category 6.
 
 ### Phase 3: Categorization
-1. Map every finding to exactly one of the 6 categories
+1. Map every finding to exactly one of the 7 categories
 2. Within each category, sort by severity: CRITICAL → HIGH → MEDIUM → LOW
 3. Discard findings that are:
    - Already suppressed by inline comments (`// nolint`, `# noqa`, `@SuppressWarnings`)
@@ -233,7 +302,7 @@ For each category (starting with the highest-severity category):
 5. If a fix breaks a test, **revert that specific fix** and flag it in the PR description
 
 ### Phase 5: Report
-Create one PR per category with:
+Create one PR per category with (Category 7 only applies to monorepos):
 
 **PR Title:** `sweep({category}): {brief description}`
 

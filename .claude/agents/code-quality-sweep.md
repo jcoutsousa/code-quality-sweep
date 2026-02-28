@@ -95,6 +95,28 @@ Every issue belongs to exactly one category:
 
 ---
 
+### Category 7: Monorepo Hygiene
+**Only applies when a monorepo structure is detected.**
+
+**Workspace Management:** no workspace config (pnpm/npm/yarn workspaces), deps installed independently, mixed package managers, missing root lockfile
+
+**Dependency Strategy:** version drift across services, phantom dependencies, no hoisting strategy, shared packages without barrel exports (public API)
+
+**Build Orchestration:** no task runner (Turborepo/Nx/Bazel), missing task pipelines, no caching, no input/output declarations
+
+**Change Detection:** CI rebuilds everything on every PR, no paths-filter, no --filter/--affected flags
+
+**Code Ownership:** missing CODEOWNERS, overly broad ownership, no team-based routing, security paths unprotected
+
+**Versioning Strategy:** manual version bumps, no changelogs, no coordinated releases, missing publishConfig/private flags
+
+**Boundary Enforcement:** shared packages export everything, services import other services' internals, no import restrictions, circular deps between packages
+
+**CI/CD Efficiency:** full rebuild >10min, no build caching, no parallelism, Docker without layer cache, no concurrency groups
+
+When fixing, reference configuration templates from `configs/templates/` (turbo.json, nx.json, CODEOWNERS, pnpm-workspace.yaml, changeset config, CI workflow).
+
+---
 ## Workflow
 
 ### Phase 1: Discovery

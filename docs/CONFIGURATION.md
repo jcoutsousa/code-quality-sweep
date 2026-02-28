@@ -23,6 +23,7 @@ categories:
   - security
   - test-quality
   - architecture
+  - monorepo-hygiene
 
 # ─── Path Exclusions ─────────────────────────────────────────────
 exclude:
@@ -77,6 +78,16 @@ rules:
     max_widget_depth: 5
     max_file_length: 400
     state_management: null  # auto-detected: bloc, riverpod, provider, getx
+
+# ─── Monorepo Hygiene Rules ──────────────────────────
+monorepo_hygiene:
+  enabled: auto  # auto | true | false (auto = only when monorepo detected)
+  preferred_task_runner: turborepo  # turborepo | nx | lerna | none
+  preferred_package_manager: pnpm  # pnpm | npm | yarn
+  enforce_codeowners: true
+  enforce_changesets: true
+  max_ci_duration_minutes: 10  # flag if CI exceeds this
+  boundary_enforcement: strict  # strict | moderate | none
 
 # ─── Monorepo Settings ───────────────────────────────────────────
 monorepo:

@@ -1,0 +1,54 @@
+# ──────────────────────────────────────────────────────
+# CODEOWNERS — Defines ownership for code review routing
+# Docs: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+# ──────────────────────────────────────────────────────
+
+# ─── Global fallback ─────────────────────────────────
+*                                   @org/engineering-leads
+
+# ─── Infrastructure & DevOps ─────────────────────────
+/.github/                           @org/platform-team
+/infra/                             @org/platform-team
+/terraform/                         @org/platform-team
+/k8s/                               @org/platform-team
+docker-compose*.yml                 @org/platform-team
+Dockerfile*                         @org/platform-team
+
+# ─── CI/CD Pipelines ────────────────────────────────
+/.github/workflows/                 @org/platform-team @org/engineering-leads
+
+# ─── Shared Libraries ───────────────────────────────
+/packages/shared/                   @org/architecture-team
+/libs/                              @org/architecture-team
+
+# ─── Service: API Gateway ───────────────────────────
+/services/api-gateway/              @org/backend-team
+/apps/api-gateway/                  @org/backend-team
+
+# ─── Service: User Service ──────────────────────────
+/services/user-service/             @org/backend-team
+/apps/user-service/                 @org/backend-team
+
+# ─── Service: Order Service ─────────────────────────
+/services/order-service/            @org/backend-team
+/apps/order-service/                @org/backend-team
+
+# ─── Service: Notification Service ──────────────────
+/services/notification-service/     @org/backend-team
+/apps/notification-service/         @org/backend-team
+
+# ─── Frontend ───────────────────────────────────────
+/apps/web/                          @org/frontend-team
+/apps/mobile/                       @org/mobile-team
+/packages/ui/                       @org/frontend-team
+
+# ─── Documentation ──────────────────────────────────
+/docs/                              @org/engineering-leads
+*.md                                @org/engineering-leads
+
+# ─── Security-sensitive files ───────────────────────
+# These require approval from security team
+**/auth/                            @org/security-team
+**/security/                        @org/security-team
+**/middleware/auth*                  @org/security-team
+.env.example                        @org/security-team
