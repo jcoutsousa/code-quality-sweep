@@ -1,0 +1,213 @@
+# Security Gate — Required status check for pull requests
+# Runs Trivy scans and uploads SARIF for every scan type
+#
+# Prerequisites:
+#   - GitHub Advanced Security enabled (for SARIF upload)
+#   - Branch protection configured to require this workflow
+#
+# Usage:
+#   This workflow runs automatically on pull requests to main/develop
+#   SARIF results appear in the GitHub Security tab
+
+name: Security Gate
+
+on:
+  pull_request:
+    branches: [main, develop]
+  push:
+    branches: [main]
+  schedule:
+    # Weekly scan for newly disclosed CVEs
+    - cron: '0 6 * * 1'
+
+permissions:
+  contents: read
+  security-events: write
+  actions: read
+
+concurrency:
+  group: security-gate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TRIVY_VERSION: "0.58.0"
+  SEVERITY_THRESHOLD: "CRITICAL,HIGH"
+
+jobs:
+  # ─── Filesystem Scan: CVEs in dependencies ────────────
+  vulnerability-scan:
+    name: "Vulnerabilities — CVEs"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy vulnerability scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: table
+          severity: ${{ env.SEVERITY_THRESHOLD }}
+          scanners: vuln
+          exit-code: 1
+
+      - name: Upload vulnerability SARIF
+        uses: aquasecurity/trivy-action@0.28.0
+        if: always()
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: sarif
+          output: trivy-vuln.sarif
+          severity: ${{ env.SEVERITY_THRESHOLD }}
+          scanners: vuln
+
+      - name: Upload to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-vuln.sarif
+          category: security-gate-vuln
+
+  # ─── Secret Detection ─────────────────────────────────
+  secret-scan:
+    name: "Secrets — Leaked Credentials"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy secret scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: table
+          scanners: secret
+          exit-code: 1
+
+      - name: Upload secret SARIF
+        uses: aquasecurity/trivy-action@0.28.0
+        if: always()
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: sarif
+          output: trivy-secret.sarif
+          scanners: secret
+
+      - name: Upload to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-secret.sarif
+          category: security-gate-secret
+
+  # ─── IaC Misconfiguration ─────────────────────────────
+  misconfig-scan:
+    name: "IaC — Misconfigurations"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy config scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: config
+          scan-ref: .
+          format: table
+          severity: ${{ env.SEVERITY_THRESHOLD }}
+          exit-code: 1
+
+      - name: Upload misconfig SARIF
+        uses: aquasecurity/trivy-action@0.28.0
+        if: always()
+        with:
+          scan-type: config
+          scan-ref: .
+          format: sarif
+          output: trivy-misconfig.sarif
+          severity: ${{ env.SEVERITY_THRESHOLD }}
+
+      - name: Upload to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-misconfig.sarif
+          category: security-gate-misconfig
+
+  # ─── License Compliance ────────────────────────────────
+  license-scan:
+    name: "Licenses — Compliance Check"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Trivy license scan
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: table
+          scanners: license
+          exit-code: 1
+          severity: "CRITICAL,HIGH"
+
+      - name: Upload license SARIF
+        uses: aquasecurity/trivy-action@0.28.0
+        if: always()
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: sarif
+          output: trivy-license.sarif
+          scanners: license
+
+      - name: Upload to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-license.sarif
+          category: security-gate-license
+
+  # ─── Combined SARIF Upload (all scanners) ──────────────
+  combined-sarif:
+    name: "Combined SARIF — All Scanners"
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [vulnerability-scan, secret-scan, misconfig-scan, license-scan]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Generate combined SARIF for all scan types
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          format: sarif
+          output: trivy-combined.sarif
+          scanners: vuln,secret,misconfig,license
+
+      - name: Upload combined SARIF to GitHub Security
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: trivy-combined.sarif
+          category: security-gate-combined
+
+  # ─── Gate Result ───────────────────────────────────────
+  security-gate-result:
+    name: "Security Gate — Result"
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [vulnerability-scan, secret-scan, misconfig-scan, license-scan]
+    steps:
+      - name: Check scan results
+        run: |
+          if [[ "${{ needs.vulnerability-scan.result }}" == "failure" ]] || \
+             [[ "${{ needs.secret-scan.result }}" == "failure" ]] || \
+             [[ "${{ needs.misconfig-scan.result }}" == "failure" ]] || \
+             [[ "${{ needs.license-scan.result }}" == "failure" ]]; then
+            echo "::error::Security gate failed — see individual scan results above"
+            exit 1
+          fi
+          echo "All security scans passed"
