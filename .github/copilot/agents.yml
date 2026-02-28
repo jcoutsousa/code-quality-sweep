@@ -1,0 +1,7 @@
+name: code-quality-sweep
+description: >
+  Multi-technology code quality agent that detects and fixes maintainability,
+  scalability, and architectural issues across Python, JavaScript/TypeScript,
+  Java/Kotlin, Go, and Flutter projects. Designed for vibe-coded repos that
+  need production-grade hygiene without slowing down creative momentum.
+version: 2.0.0

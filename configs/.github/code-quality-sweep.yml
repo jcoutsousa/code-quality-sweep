@@ -1,0 +1,23 @@
+# Code Quality Sweep — Configuration Template
+# Copy to your repo at: .github/code-quality-sweep.yml
+
+# stacks:          # auto-detected if omitted
+#   - python
+#   - javascript
+
+exclude:
+  - "vendor/"
+  - "generated/"
+  - "**/*.min.js"
+
+min_severity: low  # low | medium | high | critical
+
+architecture:
+  enabled: true
+
+# rules:
+#   python:
+#     max_function_length: 50
+#     require_type_hints: true
+#   javascript:
+#     prefer_typescript: true
