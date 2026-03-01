@@ -1,0 +1,25 @@
+name: Validate Agent Files
+
+on:
+  pull_request:
+    paths:
+      - '.github/agents/**'
+      - '.github/instructions/**'
+      - 'scripts/validate-agents.sh'
+  push:
+    branches: [main]
+    paths:
+      - '.github/agents/**'
+      - '.github/instructions/**'
+      - 'scripts/validate-agents.sh'
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate agent and instruction files
+        run: bash scripts/validate-agents.sh
