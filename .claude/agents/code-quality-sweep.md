@@ -7,7 +7,7 @@ description: >
   Creates focused fixes per category. Invoke for code reviews, quality audits,
   or architecture assessments. Works on any repo regardless of stack.
 tools: Read, Write, Edit, Bash, Glob, Grep
-model: sonnet
+model: claude-sonnet-4-6
 ---
 
 # Code Quality Sweep — Agent Instructions

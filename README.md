@@ -60,23 +60,26 @@ Multi-stack repos are fully supported — the agent detects each stack independe
 # Clone this repo
 git clone https://github.com/jcoutsousa/code-quality-sweep.git
 
-# Copy the agent instructions into your project
-cp -r code-quality-sweep/.github/copilot your-project/.github/copilot
+# Copy the agent definitions and path-specific instructions into your project
+cp -r code-quality-sweep/.github/agents your-project/.github/agents
+cp -r code-quality-sweep/.github/instructions your-project/.github/instructions
 
 # Optionally copy the configuration template
 cp code-quality-sweep/configs/.github/code-quality-sweep.yml your-project/.github/
 ```
 
-Then commit and push. The agent is now available in your repo.
+Then commit and push. The agents are now available in your repo.
 
 ### Option 2: Reference as a shared agent
 
-If your GitHub organization supports [shared agent repositories](https://docs.github.com/en/copilot/customizing-copilot/extending-the-functionality-of-github-copilot-in-your-organization), you can reference this repo directly in your organization's Copilot settings. This means every repo in your org gets the agent without copying files.
+If your GitHub organization supports [shared agent repositories](https://docs.github.com/en/copilot/customizing-copilot/extending-the-functionality-of-github-copilot-in-your-organization), you can reference this repo directly in your organization's Copilot settings. This means every repo in your org gets the agents without copying files.
 
 **How to configure:**
 1. Go to your organization's **Settings → Copilot → Agent repositories**
 2. Add `jcoutsousa/code-quality-sweep` as a shared agent repository
-3. The agent becomes available across all repos in your org
+3. All four agents become available across all repos in your org
+
+For organization-wide distribution via `.github-private`, place agent profiles in `/agents/` at the root of your org's `.github-private` repository.
 
 ---
 
@@ -148,6 +151,25 @@ The agent is also available as a user-level subagent. Copy it to `~/.claude/agen
 
 ```bash
 cp .claude/agents/code-quality-sweep.md ~/.claude/agents/
+```
+
+### Specialized Agents
+
+The agent suite consists of a coordinator and three specialist agents. In VS Code (1.106+), handoff buttons appear after each agent response, letting you transition between specialists seamlessly.
+
+| Agent | Scope | Categories |
+|---|---|---|
+| `@code-quality-sweep` | Full sweep coordinator | All 8 categories |
+| `@sweep-security` | Security specialist | 4 (Security & Secrets) + 8 (Container & Infra Security) |
+| `@sweep-architecture` | Architecture specialist | 6 (Architecture & Scalability) |
+| `@sweep-monorepo` | Monorepo specialist | 7 (Monorepo Hygiene) |
+
+You can invoke any specialist directly:
+
+```
+@sweep-security Scan this repo for hardcoded secrets and CVEs
+@sweep-architecture Generate an architecture assessment report
+@sweep-monorepo Audit the monorepo workspace configuration
 ```
 
 ### Using with Other AI Editors (Cursor, Windsurf, etc.)

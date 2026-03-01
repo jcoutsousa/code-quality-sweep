@@ -1,6 +1,6 @@
 Use the code-quality-sweep agent to perform a full code quality audit on this repository.
 
-Scan the entire codebase, detect the technology stack(s), and run all 6 sweep categories:
+Scan the entire codebase, detect the technology stack(s), and run all 8 sweep categories:
 1. Dead Code & Unused Dependencies
 2. Code Style & Consistency
 3. Error Handling & Resilience

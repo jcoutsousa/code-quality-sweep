@@ -17,7 +17,7 @@ When working in a repository that has copied this agent's instructions:
 
 ## Key Concepts
 
-The agent organizes findings into 6 categories (each addressed separately):
+The agent organizes findings into 8 categories (each addressed separately):
 
 1. **Dead Code & Unused Dependencies** — unreferenced code, stale deps
 2. **Code Style & Consistency** — naming, magic numbers, paradigm mixing
@@ -39,9 +39,17 @@ The agent organizes findings into 6 categories (each addressed separately):
 ## File Structure
 
 ```
-.github/copilot/          # GitHub Copilot agent instructions
-  agents.yml
-  instructions.md
+.github/agents/            # GitHub Copilot agent definitions
+  code-quality-sweep.agent.md    # Coordinator (full sweep)
+  sweep-security.agent.md        # Security specialist (Cat 4+8)
+  sweep-architecture.agent.md    # Architecture specialist (Cat 6)
+  sweep-monorepo.agent.md        # Monorepo specialist (Cat 7)
+.github/instructions/      # Path-specific coding instructions
+  python.instructions.md
+  javascript.instructions.md
+  dart.instructions.md
+  go.instructions.md
+  java.instructions.md
 .claude/agents/            # Claude Code subagent
   code-quality-sweep.md
 .claude/commands/          # Claude Code slash commands
